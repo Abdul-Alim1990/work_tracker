@@ -1,113 +1,119 @@
 import 'package:flutter/material.dart';
+import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+const String agoraAppId = "aab82ce2e6b04193a9f029377a7262a6";
 
 void main() {
-  runApp(const WorkTrackerApp());
+  runApp(const RahmanovApp());
 }
 
-class WorkTrackerApp extends StatelessWidget {
-  const WorkTrackerApp({super.key});
+class RahmanovApp extends StatelessWidget {
+  const RahmanovApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Work Tracker',
+      title: 'رحمنوف',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.teal,
         useMaterial3: true,
       ),
-      home: const ChatScreen(),
+      home: const GroupChatScreen(),
     );
   }
 }
 
-class ChatMessage {
-  final String text;
-  final bool isMe;
-  final String time;
-
-  ChatMessage({required this.text, required this.isMe, required this.time});
-}
-
-class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+class GroupChatScreen extends StatefulWidget {
+  const GroupChatScreen({super.key});
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  State<GroupChatScreen> createState() => _GroupChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
-  final TextEditingController _messageController = TextEditingController();
-  final List<ChatMessage> _messages = [
-    ChatMessage(text: "مرحباً بك! كيف يمكنني مساعدتك اليوم؟", isMe: false, time: "10:00 AM"),
+class _GroupChatScreenState extends State<GroupChatScreen> {
+  final TextEditingController _msgController = TextEditingController();
+  final List<Map<String, dynamic>> _messages = [
+    {"user": "رحمنوف", "text": "مرحباً بكم في تطبيق رحمنوف للدردشة والمكالمات!", "isMe": false},
   ];
 
   void _sendMessage() {
-    if (_messageController.text.trim().isEmpty) return;
-
+    if (_msgController.text.trim().isEmpty) return;
     setState(() {
-      _messages.insert(
-        0,
-        ChatMessage(
-          text: _messageController.text,
-          isMe: true,
-          time: "${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}",
-        ),
-      );
+      _messages.insert(0, {
+        "user": "أنا",
+        "text": _msgController.text,
+        "isMe": true,
+      });
     });
+    _msgController.clear();
+  }
 
-    _messageController.clear();
+  void _startGroupVideoCall() async {
+    await [Permission.microphone, Permission.camera].request();
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const GroupVideoCallScreen(channelName: "rahmanov_room"),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('قسم المحادثات والدردشة'),
+        title: const Text('رحمنوف - الشات والمكالمات'),
         centerTitle: true,
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.video_call, size: 30),
+            onPressed: _startGroupVideoCall,
+            tooltip: 'مكالمة فيديو',
+          ),
+        ],
       ),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
               reverse: true,
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.all(10),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
-                final message = _messages[index];
+                final msg = _messages[index];
+                final bool isMe = msg["isMe"];
                 return Align(
-                  alignment: message.isMe ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4.0),
-                    padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: message.isMe ? Colors.blue : Colors.grey[300],
-                      borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(12),
-                        topRight: const Radius.circular(12),
-                        bottomLeft: message.isMe ? const Radius.circular(12) : Radius.zero,
-                        bottomRight: message.isMe ? Radius.zero : const Radius.circular(12),
-                      ),
+                      color: isMe ? Colors.teal : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Column(
                       crossAxisAlignment:
-                          message.isMe ? CrossAlignment.end : CrossAlignment.start,
+                          isMe ? CrossAlignment.end : CrossAlignment.start,
                       children: [
-                        Text(
-                          message.text,
-                          style: TextStyle(
-                            color: message.isMe ? Colors.white : Colors.black87,
-                            fontSize: 15,
+                        if (!isMe)
+                          Text(
+                            msg["user"],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: Colors.teal,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
                         Text(
-                          message.time,
+                          msg["text"],
                           style: TextStyle(
-                            color: message.isMe ? Colors.white70 : Colors.black54,
-                            fontSize: 10,
+                            color: isMe ? Colors.white : Colors.black87,
+                            fontSize: 15,
                           ),
                         ),
                       ],
@@ -118,13 +124,13 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+            padding: const EdgeInsets.all(8),
             color: Colors.white,
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
-                    controller: _messageController,
+                    controller: _msgController,
                     decoration: const InputDecoration(
                       hintText: 'اكتب رسالتك هنا...',
                       border: InputBorder.none,
@@ -132,7 +138,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.send, color: Colors.blueAccent),
+                  icon: const Icon(Icons.send, color: Colors.teal),
                   onPressed: _sendMessage,
                 ),
               ],
@@ -140,6 +146,131 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class GroupVideoCallScreen extends StatefulWidget {
+  final String channelName;
+  const GroupVideoCallScreen({super.key, required this.channelName});
+
+  @override
+  State<GroupVideoCallScreen> createState() => _GroupVideoCallScreenState();
+}
+
+class _GroupVideoCallScreenState extends State<GroupVideoCallScreen> {
+  final List<int> _remoteUids = [];
+  bool _localUserJoined = false;
+  late RtcEngine _engine;
+
+  @override
+  void initState() {
+    super.initState();
+    _initAgora();
+  }
+
+  Future<void> _initAgora() async {
+    _engine = createAgoraRtcEngine();
+    await _engine.initialize(const RtcEngineContext(
+      appId: agoraAppId,
+      channelProfile: ChannelProfileType.channelProfileCommunication,
+    ));
+
+    _engine.registerEventHandler(
+      RtcEngineEventHandler(
+        onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
+          setState(() {
+            _localUserJoined = true;
+          });
+        },
+        onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
+          setState(() {
+            _remoteUids.add(remoteUid);
+          });
+        },
+        onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
+          setState(() {
+            _remoteUids.remove(remoteUid);
+          });
+        },
+      ),
+    );
+
+    await _engine.enableVideo();
+    await _engine.startPreview();
+    await _engine.joinChannel(
+      token: '',
+      channelId: widget.channelName,
+      uid: 0,
+      options: const ChannelMediaOptions(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _engine.leaveChannel();
+    _engine.release();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('مكالمة الفيديو الجماعية'),
+        backgroundColor: Colors.teal,
+        foregroundColor: Colors.white,
+      ),
+      body: Stack(
+        children: [
+          _buildGridVideoView(),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: FloatingActionButton(
+                backgroundColor: Colors.red,
+                child: const Icon(Icons.call_end, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGridVideoView() {
+    List<Widget> views = [];
+    if (_localUserJoined) {
+      views.add(
+        AgoraVideoView(
+          controller: VideoViewController(
+            rtcEngine: _engine,
+            canvas: const VideoCanvas(uid: 0),
+          ),
+        ),
+      );
+    }
+    for (int uid in _remoteUids) {
+      views.add(
+        AgoraVideoView(
+          controller: VideoViewController.remote(
+            rtcEngine: _engine,
+            canvas: VideoCanvas(uid: uid),
+            connection: RtcConnection(channelId: widget.channelName),
+          ),
+        ),
+      );
+    }
+
+    if (views.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return GridView.count(
+      crossAxisCount: views.length > 2 ? 2 : 1,
+      children: views,
     );
   }
 }
