@@ -1,4 +1,4 @@
-name: Build Android App
+name: Build Android APK
 
 on:
   push:
@@ -30,11 +30,11 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Build App Bundle
-        run: flutter build appbundle --release --no-tree-shake-icons
+      - name: Build APK
+        run: flutter build apk --release --no-tree-shake-icons
 
-      - name: Upload AAB Artifact
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-aab
-          path: build/app/outputs/bundle/release/app-release.aab
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
